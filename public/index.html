@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>abd app</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    #chat-container {
+      border: 1px solid #ccc;
+      height: 400px;
+      padding: 10px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    #message-form {
+      display: flex;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 8px;
+      margin-right: 10px;
+    }
+
+    #username-container {
+      margin-bottom: 20px;
+    }
+
+    .message {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+    }
+
+    .user-message {
+      background-color: #e3f2fd;
+      text-align: right;
+    }
+
+    .other-message {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Simple Chat App</h1>
+
+  <div id="username-container">
+    <input type="text" id="username-input" placeholder="Enter your username" />
+    <button id="join-btn">Join Chat</button>
+  </div>
+
+  <div id="chat-container"></div>
+
+  <form id="message-form">
+    <input type="text" id="message-input" placeholder="Type your message..." disabled />
+    <button type="submit" id="send-btn" disabled>Send</button>
+  </form>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const chatContainer = document.getElementById('chat-container');
+      const messageForm = document.getElementById('message-form');
+      const messageInput = document.getElementById('message-input');
+      const sendBtn = document.getElementById('send-btn');
+      const usernameInput = document.getElementById('username-input');
+      const joinBtn = document.getElementById('join-btn');
+
+      let socket;
+      let username = '';
+
+      joinBtn.addEventListener('click', () => {
+        username = usernameInput.value.trim();
+        if (!username) {
+          alert('Please enter a username');
+          return;
+        }
+
+        socket = io('http://localhost:3000');
+
+        socket.on('connect', () => {
+          console.log('Connected to server');
+
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+          usernameInput.disabled = true;
+          joinBtn.disabled = true;
+
+          addMessage(
+            'System',
+            `Welcome to the chat, ${username}!`,
+            'system-message',
+          );
+
+          socket.emit('join', { username });
+        });
+
+        socket.on('message', (data) => {
+          addMessage(
+            data.username,
+            data.text,
+            data.username === username ? 'user-message' : 'other-message',
+          );
+        });
+
+        socket.on('userJoined', (data) => {
+          addMessage(
+            'System',
+            `${data.username} has joined the chat!`,
+            'system-message',
+          );
+        });
+
+        socket.on('disconnect', () => {
+          addMessage('System', 'Disconnected from server', 'system-message');
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+          usernameInput.disabled = false;
+          joinBtn.disabled = false;
+        });
+      });
+
+      messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        socket.emit('chatMessage', { text: message, username });
+        messageInput.value = '';
+      });
+
+      function addMessage(user, text, className) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', className);
+        messageElement.innerHTML = `<strong>${user}:</strong> ${text}`;
+        chatContainer.appendChild(messageElement);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    });
+  </script>
+</body>
+
+</html>
