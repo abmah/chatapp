@@ -107,11 +107,9 @@
         });
 
         socket.on('message', (data) => {
-          addMessage(
-            data.username,
-            data.text,
+          addMessage(data.username, data.text,
             data.username === username ? 'user-message' : 'other-message',
-          );
+            data.timestamp);
         });
 
         socket.on('userJoined', (data) => {
@@ -140,10 +138,18 @@
         messageInput.value = '';
       });
 
-      function addMessage(user, text, className) {
+      function addMessage(user, text, className, timestamp = null) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', className);
-        messageElement.innerHTML = `<strong>${user}:</strong> ${text}`;
+
+
+        let timeString = '';
+        if (timestamp) {
+          const date = new Date(timestamp);
+          timeString = `[${date.toLocaleTimeString()}] `;
+        }
+
+        messageElement.innerHTML = `${timeString}<strong>${user}:</strong> ${text}`;
         chatContainer.appendChild(messageElement);
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
