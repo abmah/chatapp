@@ -6,54 +6,156 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>abd app</title>
   <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --border-color: #ccc;
+      --container-bg: #ffffff;
+      --input-bg: #ffffff;
+      --input-border: #ccc;
+      --input-text: #000000;
+      --button-bg: #f0f0f0;
+      --button-text: #000000;
+      --button-border: #ccc;
+      --button-disabled-bg: #e0e0e0;
+      --button-disabled-text: #aaa;
+      --button-disabled-border: #ccc;
+      --user-message-bg: #e3f2fd;
+      --user-message-text: #000000;
+      --other-message-bg: #f1f1f1;
+      --other-message-text: #000000;
+      --system-message-text: #555;
+      --toggle-bg: #f0f0f0;
+      --toggle-text: #000000;
+    }
+
+    body.night-mode {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --border-color: #444;
+      --container-bg: #1e1e1e;
+      --input-bg: #333;
+      --input-border: #555;
+      --input-text: #e0e0e0;
+      --button-bg: #555;
+      --button-text: #e0e0e0;
+      --button-border: #777;
+      --button-disabled-bg: #444;
+      --button-disabled-text: #888;
+      --button-disabled-border: #666;
+      --user-message-bg: #0d47a1;
+      --user-message-text: #e0e0e0;
+      --other-message-bg: #333;
+      --other-message-text: #e0e0e0;
+      --system-message-text: #aaa;
+      --toggle-bg: #eee;
+      --toggle-text: #121212;
+    }
+
     body {
       font-family: Arial, sans-serif;
       max-width: 800px;
       margin: 0 auto;
       padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      position: relative;
+      transition: background-color 0.3s, color 0.3s;
     }
 
     #chat-container {
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       height: 400px;
       padding: 10px;
       overflow-y: auto;
       margin-bottom: 10px;
+      background-color: var(--container-bg);
+      transition: background-color 0.3s, border-color 0.3s;
     }
 
     #message-form {
       display: flex;
     }
 
-    #message-input {
+    #message-input,
+    #username-input {
       flex: 1;
       padding: 8px;
       margin-right: 10px;
+      background-color: var(--input-bg);
+      color: var(--input-text);
+      border: 1px solid var(--input-border);
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
     }
+
+    #message-input {
+      margin-right: 10px;
+    }
+
+    #username-input {
+      margin-right: 10px;
+    }
+
 
     #username-container {
       margin-bottom: 20px;
+      display: flex;
     }
 
     .message {
       margin-bottom: 10px;
       padding: 8px;
       border-radius: 5px;
+      color: var(--other-message-text);
     }
 
     .user-message {
-      background-color: #e3f2fd;
+      background-color: var(--user-message-bg);
+      color: var(--user-message-text);
       text-align: right;
     }
 
     .other-message {
-      background-color: #f1f1f1;
+      background-color: var(--other-message-bg);
+      color: var(--other-message-text);
+    }
+
+    .system-message {
+      color: var(--system-message-text);
+      font-style: italic;
+      text-align: center;
+    }
+
+    button {
+      padding: 8px 15px;
+      cursor: pointer;
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border: 1px solid var(--button-border);
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    button:disabled {
+      background-color: var(--button-disabled-bg);
+      color: var(--button-disabled-text);
+      border-color: var(--button-disabled-border);
+      cursor: not-allowed;
+    }
+
+    #night-mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 5px 10px;
+      background-color: var(--toggle-bg);
+      color: var(--toggle-text);
     }
   </style>
 </head>
 
 <body>
   <h1>Simple Chat App</h1>
+  <button id="night-mode-toggle">🌙</button>
 
   <div id="username-container">
     <input type="text" id="username-input" placeholder="Enter your username" />
@@ -76,9 +178,36 @@
       const sendBtn = document.getElementById('send-btn');
       const usernameInput = document.getElementById('username-input');
       const joinBtn = document.getElementById('join-btn');
+      const nightModeToggle = document.getElementById('night-mode-toggle');
+      const body = document.body;
 
       let socket;
       let username = '';
+
+      function applyNightMode(isNight) {
+        if (isNight) {
+          body.classList.add('night-mode');
+          nightModeToggle.textContent = '☀️';
+          localStorage.setItem('nightMode', 'enabled');
+        } else {
+          body.classList.remove('night-mode');
+          nightModeToggle.textContent = '🌙';
+          localStorage.setItem('nightMode', 'disabled');
+        }
+      }
+
+      const savedNightMode = localStorage.getItem('nightMode');
+      if (savedNightMode === 'enabled') {
+        applyNightMode(true);
+      } else {
+        applyNightMode(false);
+      }
+
+
+      nightModeToggle.addEventListener('click', () => {
+        applyNightMode(!body.classList.contains('night-mode'));
+      });
+
 
       joinBtn.addEventListener('click', () => {
         username = usernameInput.value.trim();
@@ -90,7 +219,7 @@
         socket = io('http://localhost:3000');
 
         socket.on('connect', () => {
-          console.log('Connected to server');
+
 
           messageInput.disabled = false;
           sendBtn.disabled = false;
@@ -132,7 +261,7 @@
       messageForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const message = messageInput.value.trim();
-        if (!message) return;
+        if (!message || !socket) return;
 
         socket.emit('chatMessage', { text: message, username });
         messageInput.value = '';
@@ -149,7 +278,13 @@
           timeString = `[${date.toLocaleTimeString()}] `;
         }
 
-        messageElement.innerHTML = `${timeString}<strong>${user}:</strong> ${text}`;
+        if (className === 'system-message') {
+          messageElement.innerHTML = `${timeString}${text}`;
+        } else {
+          messageElement.innerHTML = `${timeString}<strong>${user}:</strong> ${text}`;
+        }
+
+
         chatContainer.appendChild(messageElement);
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
